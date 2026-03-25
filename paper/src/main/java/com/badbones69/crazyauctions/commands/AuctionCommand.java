@@ -229,6 +229,11 @@ public class AuctionCommand implements CommandExecutor {
 
                         return false;
                     }
+                    if (Methods.getItemInHand(player).getType() == Material.FILLED_MAP) {
+                        player.sendMessage(Messages.ITEM_BLACKLISTED.getMessage(sender));
+
+                        return false;
+                    }
 
                     long price = Long.parseLong(stringPrice);
 
