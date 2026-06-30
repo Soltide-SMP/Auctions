@@ -32,7 +32,183 @@ public class AuctionCommand extends BaseCommand {
             return;
         }
 
-        final FileConfiguration config = FileKey.config.getConfiguration();
+        switch (args[0].toLowerCase()) {
+            case "help" -> {
+                if (!Methods.hasPermission(sender, "access")) {
+                    return true;
+                }
+
+                sender.sendMessage(Messages.HELP.getMessage(sender));
+
+                return true;
+            }
+
+            case "reload" -> {
+                if (!Methods.hasPermission(sender, "reload")) {
+                    return true;
+                }
+
+                this.fileManager.reloadFiles().init();
+
+                this.crazyManager.load();
+
+                sender.sendMessage(Messages.RELOAD.getMessage(sender));
+
+                return true;
+            }
+
+            case "force_end_all" -> {
+                if (!Methods.hasPermission(sender, "force-end-all")) {
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Messages.PLAYERS_ONLY.getMessage(sender));
+                    return true;
+                }
+
+                forceEndAll(player);
+
+                return true;
+            }
+
+            case "view" -> {
+                if (!Methods.hasPermission(sender, "view")) {
+                    return true;
+                }
+
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Messages.PLAYERS_ONLY.getMessage(sender));
+
+                    return true;
+                }
+
+                if (args.length >= 2) {
+                    GuiListener.openViewer(player, args[1], 1);
+
+                    return true;
+                }
+
+                sender.sendMessage(Messages.CRAZYAUCTIONS_VIEW.getMessage(sender));
+
+                return true;
+            }
+
+            case "expired", "collect" -> {
+                if (!Methods.hasPermission(sender, "access")) {
+                    return true;
+                }
+
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Messages.PLAYERS_ONLY.getMessage(sender));
+
+                    return true;
+                }
+
+                GuiListener.openPlayersExpiredList(player, 1);
+
+                return true;
+            }
+
+            case "listed" -> {
+                if (!Methods.hasPermission(sender, "access")) return true;
+
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Messages.PLAYERS_ONLY.getMessage(sender));
+
+                    return true;
+                }
+
+                GuiListener.openPlayersCurrentList(player, 1);
+
+                return true;
+            }
+
+            case "sell", "bid" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Messages.PLAYERS_ONLY.getMessage(sender));
+
+                    return true;
+                }
+
+                if (args.length >= 2) {
+                    if (args[0].equalsIgnoreCase("sell")) {
+                        if (!crazyManager.isSellingEnabled()) {
+                            player.sendMessage(Messages.SELLING_DISABLED.getMessage(sender));
+
+                            return true;
+                        }
+
+                        if (!Methods.hasPermission(player, "sell")) return true;
+                    }
+
+                    if (args[0].equalsIgnoreCase("bid")) {
+                        if (!crazyManager.isBiddingEnabled()) {
+                            player.sendMessage(Messages.BIDDING_DISABLED.getMessage(sender));
+
+                            return true;
+                        }
+
+                        if (!Methods.hasPermission(player, "bid")) return true;
+                    }
+
+                    ItemStack item = Methods.getItemInHand(player);
+                    int amount = item.getAmount();
+
+                    if (args.length >= 3) {
+                        if (!Methods.isInt(args[2])) {
+                            Map<String, String> placeholders = new HashMap<>();
+                            placeholders.put("%Arg%", args[2]);
+                            placeholders.put("%arg%", args[2]);
+
+                            player.sendMessage(Messages.NOT_A_NUMBER.getMessage(sender, placeholders));
+
+                            return true;
+                        }
+
+                        amount = Integer.parseInt(args[2]);
+
+                        if (amount <= 0) amount = 1;
+                        if (amount > item.getAmount()) amount = item.getAmount();
+                    }
+
+                    String stringPrice = args[1].toLowerCase()
+                            .replaceAll("tn", "000000000000")
+                            .replaceAll("bn", "000000000")
+                            .replaceAll("m", "000000")
+                            .replaceAll("k", "000");
+
+                    if (!Methods.isLong(stringPrice)) {
+                        Map<String, String> placeholders = new HashMap<>();
+                        placeholders.put("%Arg%", stringPrice);
+                        placeholders.put("%arg%", stringPrice);
+
+                        player.sendMessage(Messages.NOT_A_NUMBER.getMessage(sender, placeholders));
+
+                        return true;
+                    }
+
+                    if (Methods.getItemInHand(player).getType() == Material.AIR) {
+                        player.sendMessage(Messages.DOESNT_HAVE_ITEM_IN_HAND.getMessage(sender));
+
+                        return false;
+                    }
+                    if (Methods.getItemInHand(player).getType() == Material.FILLED_MAP) {
+                        player.sendMessage(Messages.ITEM_BLACKLISTED.getMessage(sender));
+
+                        return false;
+                    }
+
+                    long price = Long.parseLong(stringPrice);
+
+                    if (args[0].equalsIgnoreCase("bid")) {
+                        if (price < config.getLong("Settings.Minimum-Bid-Price", 100)) {
+                            player.sendMessage(Messages.BID_PRICE_TO_LOW.getMessage(sender));
+
+                            return true;
+                        }
+
+                        if (price > config.getLong("Settings.Max-Beginning-Bid-Price", 1000000)) {
+                            player.sendMessage(Messages.BID_PRICE_TO_HIGH.getMessage(sender));
 
         final Player player = context.getPlayer();
 
