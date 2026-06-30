@@ -1,19 +1,20 @@
 package com.badbones69.crazyauctions;
 
-import com.badbones69.crazyauctions.api.enums.Files;
-import com.badbones69.crazyauctions.api.enums.Messages;
+import com.badbones69.crazyauctions.api.CrazyPlatform;
 import com.badbones69.crazyauctions.api.enums.Reasons;
+import com.badbones69.crazyauctions.api.registry.adapters.PaperSenderAdapter;
+import com.badbones69.crazyauctions.common.enums.FileKey;
 import com.badbones69.crazyauctions.api.events.AuctionCancelledEvent;
 import com.badbones69.crazyauctions.api.events.AuctionExpireEvent;
 import com.badbones69.crazyauctions.api.events.AuctionWinBidEvent;
+import com.ryderbelserion.fusion.core.utils.StringUtils;
 import org.bukkit.*;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+import us.crazycrew.api.constants.Messages;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,10 +23,11 @@ public class Methods {
 
     private final static CrazyAuctions plugin = CrazyAuctions.get();
 
+    private final static CrazyPlatform platform = plugin.getPlatform();
+
+    private final static PaperSenderAdapter adapter = platform.getSenderAdapter();
+
     private final static Pattern HEX_PATTERN = Pattern.compile("#[a-fA-F0-9]{6}");
-
-    private static final Pattern UUID_PATTERN = Pattern.compile("[a-f0-9]{8}(?:-[a-f0-9]{4}){4}[a-f0-9]{8}");
-
 
     public static String color(String message) {
         Matcher matcher = HEX_PATTERN.matcher(message);
@@ -39,11 +41,11 @@ public class Methods {
     }
     
     public static String getPrefix() {
-        return color(Files.config.getConfiguration().getString("Settings.Prefix", ""));
+        return color(FileKey.config.getConfiguration().getString("Settings.Prefix", ""));
     }
     
     public static String getPrefix(String msg) {
-        return color(Files.config.getConfiguration().getString("Settings.Prefix", "") + msg);
+        return color(FileKey.config.getConfiguration().getString("Settings.Prefix", "") + msg);
     }
 
     public static ItemStack getItemInHand(Player player) {
@@ -52,26 +54,6 @@ public class Methods {
 
     public static void setItemInHand(Player player, ItemStack item) {
         player.getInventory().setItemInMainHand(item);
-    }
-    
-    public static boolean isInt(String s) {
-        try {
-            Integer.parseInt(s);
-        } catch (NumberFormatException nfe) {
-            return false;
-        }
-
-        return true;
-    }
-    
-    public static boolean isLong(String s) {
-        try {
-            Long.parseLong(s);
-        } catch (NumberFormatException nfe) {
-            return false;
-        }
-
-        return true;
     }
 
     public static @Nullable Player getPlayer(String uuid) {
@@ -90,10 +72,6 @@ public class Methods {
         return plugin.getServer().getOfflinePlayer(UUID.fromString(uuid));
     }
 
-    public static boolean isUUID(String uuid) {
-        return UUID_PATTERN.matcher(uuid).find();
-    }
-
     public static boolean isOnline(String uuid) {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (player.getUniqueId().toString().equals(uuid)) {
@@ -102,41 +80,6 @@ public class Methods {
         }
 
         return false;
-    }
-    
-    public static boolean isOnline(String name, CommandSender p) {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (player.getName().equalsIgnoreCase(name)) {
-                return true;
-            }
-        }
-
-        p.sendMessage(Messages.NOT_ONLINE.getMessage(p));
-        return false;
-    }
-    
-    public static boolean hasPermission(Player player, String perm) {
-        if (!player.hasPermission("crazyauctions." + perm)) {
-            player.sendMessage(Messages.NO_PERMISSION.getMessage(player));
-
-            return false;
-        }
-
-        return true;
-    }
-    
-    public static boolean hasPermission(CommandSender sender, String perm) {
-        if (sender instanceof Player player) {
-            if (!player.hasPermission("crazyauctions." + perm)) {
-                player.sendMessage(Messages.NO_PERMISSION.getMessage(player));
-
-                return false;
-            }
-
-            return true;
-        }
-
-        return true;
     }
     
     public static List<ItemStack> getPage(List<ItemStack> list, Integer page) {
@@ -152,7 +95,7 @@ public class Methods {
             if (index < list.size()) items.add(list.get(index));
         }
 
-        for (; items.size() == 0; page--) {
+        for (; items.isEmpty(); page--) {
             if (page <= 0) break;
             index = page * max - max;
             endIndex = index >= list.size() ? list.size() - 1 : index + max;
@@ -221,37 +164,13 @@ public class Methods {
         return D + "d " + H + "h " + M + "m " + S + "s ";
     }
     
-    public static long convertToMill(String time) {
-        Calendar cal = Calendar.getInstance();
-
-        for (String i : time.split(" ")) {
-            if (i.contains("D") || i.contains("d")) {
-                cal.add(Calendar.DATE, Integer.parseInt(i.replace("D", "").replace("d", "")));
-            }
-
-            if (i.contains("H") || i.contains("h")) {
-                cal.add(Calendar.HOUR, Integer.parseInt(i.replace("H", "").replace("h", "")));
-            }
-
-            if (i.contains("M") || i.contains("m")) {
-                cal.add(Calendar.MINUTE, Integer.parseInt(i.replace("M", "").replace("m", "")));
-            }
-
-            if (i.contains("S") || i.contains("s")) {
-                cal.add(Calendar.SECOND, Integer.parseInt(i.replace("S", "").replace("s", "")));
-            }
-        }
-
-        return cal.getTimeInMillis();
-    }
-    
     public static boolean isInvFull(Player player) {
         return player.getInventory().firstEmpty() == -1;
     }
     
     public static void updateAuction() {
-        FileConfiguration config = Files.config.getConfiguration();
-        FileConfiguration data = Files.data.getConfiguration();
+        FileConfiguration config = FileKey.config.getConfiguration();
+        FileConfiguration data = FileKey.data.getConfiguration();
 
         Calendar cal = Calendar.getInstance();
         Calendar expireTime = Calendar.getInstance();
@@ -281,11 +200,11 @@ public class Methods {
 
                     for (; data.contains("OutOfTime/Cancelled." + num); num++) ;
 
-                    if (data.getBoolean("Items." + i + ".Biddable") && !data.getString("Items." + i + ".TopBidder").equalsIgnoreCase("None") && plugin.getSupport().getMoney(getOfflinePlayer(data.getString("Items." + i + ".TopBidder"))) >= data.getInt("Items." + i + ".Price")) {
+                    if (data.getBoolean("Items." + i + ".Biddable") && !data.getString("Items." + i + ".TopBidder").equalsIgnoreCase("None") && plugin.getSupport().getMoney(getOfflinePlayer(data.getString("Items." + i + ".TopBidder"))) >= data.getLong("Items." + i + ".Price")) {
                         String winner = data.getString("Items." + i + ".TopBidder");
                         String seller = data.getString("Items." + i + ".Seller");
                         long price = data.getLong("Items." + i + ".Price");
-                        long taxAmount = (long) (price * config.getDouble("Settings.Percent-Tax", 0) / 100);
+                        long taxAmount = price * config.getLong("Settings.Percent-Tax", 0) / 100;
                         long taxedPriceAmount = Math.max(price - taxAmount, 0);
 
                         OfflinePlayer sellerPlayer = Methods.getOfflinePlayer(seller);
@@ -298,8 +217,12 @@ public class Methods {
                         String taxedPrice = String.valueOf(taxedPriceAmount);
 
                         HashMap<String, String> placeholders = new HashMap<>();
-                        placeholders.put("%Price%", getPrice(i, false));
-                        placeholders.put("%price%", getPrice(i, false));
+
+                        final String placeholder = StringUtils.formatNumber(getPrice(i, false));
+
+                        placeholders.put("%Price%", placeholder);
+                        placeholders.put("%price%", placeholder);
+
                         placeholders.put("%Tax%", tax);
                         placeholders.put("%tax%", tax);
                         placeholders.put("%Taxed_Price%", taxedPrice);
@@ -315,7 +238,7 @@ public class Methods {
                             new AuctionWinBidEvent(player, Methods.fromBase64(data.getString("Items." + i + ".Item")), price).callEvent();
 
                             if (player != null) {
-                                player.sendMessage(Messages.WIN_BIDDING.getMessage(player, placeholders));
+                                adapter.sendMessage(player, Messages.win_bidding, placeholders);
                             }
                         }
 
@@ -323,7 +246,7 @@ public class Methods {
                             Player player = getPlayer(seller);
 
                             if (player != null) {
-                                player.sendMessage(Messages.SOMEONE_WON_PLAYERS_BID.getMessage(player, placeholders));
+                                adapter.sendMessage(player, Messages.someone_won_players_bid, placeholders);
                             }
                         }
 
@@ -336,7 +259,7 @@ public class Methods {
                         Player player = getPlayer(seller);
 
                         if (isOnline(seller) && player != null) {
-                            player.sendMessage(Messages.ITEM_HAS_EXPIRED.getMessage(player));
+                            adapter.sendMessage(player, Messages.item_has_expired);
                         }
 
                         AuctionExpireEvent event = new AuctionExpireEvent(player, Methods.fromBase64(data.getString("Items." + i + ".Item")));
@@ -354,13 +277,13 @@ public class Methods {
             }
         }
 
-        if (shouldSave) Files.data.save();
+        if (shouldSave) FileKey.data.save();
     }
     
-    public static String getPrice(String ID, Boolean Expired) {
-        long price = 0L;
+    public static long getPrice(String ID, Boolean Expired) {
+        long price = 0;
 
-        FileConfiguration configuration = Files.data.getConfiguration();
+        FileConfiguration configuration = FileKey.data.getConfiguration();
 
         if (Expired) {
             if (configuration.contains("OutOfTime/Cancelled." + ID + ".Price")) {
@@ -372,7 +295,7 @@ public class Methods {
             }
         }
 
-        return String.valueOf(price);
+        return price;
     }
 
     /**
@@ -385,7 +308,6 @@ public class Methods {
      * @return The section in which the item was saved.
      */
     public static int expireItem(int num, OfflinePlayer seller, String i, FileConfiguration data, Reasons reasons) {
-
         while (data.contains("OutOfTime/Cancelled." + num)) num++;
 
         AuctionCancelledEvent event = new AuctionCancelledEvent(seller, Methods.fromBase64(data.getString("Items." + i + ".Item")), reasons);

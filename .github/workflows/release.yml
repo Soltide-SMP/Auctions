@@ -10,6 +10,9 @@ jobs:
   build:
     uses: Crazy-Crew/.github/.github/workflows/build.yml@main
 
+    with:
+      branch: main
+
     secrets:
       webhook: ${{ secrets.BUILD_WEBHOOK }}
       modrinth_token: ${{ secrets.MODRINTH_TOKEN }}

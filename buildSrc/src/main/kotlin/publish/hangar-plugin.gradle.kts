@@ -1,4 +1,3 @@
-import gradle.kotlin.dsl.accessors._bc702d41505d332776c95ae061891e6e.ext
 import io.papermc.hangarpublishplugin.model.Platforms
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 
@@ -19,6 +18,8 @@ hangarPublish {
         changelog.set(rootProject.ext.get("mc_changelog").toString())
 
         channel.set(rootProject.ext.get("release_type").toString().uppercaseFirstChar())
+
+        pages.resourcePage(rootProject.file("README.md").readText(Charsets.UTF_8))
 
         platforms {
             register(Platforms.PAPER) {

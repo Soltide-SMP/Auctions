@@ -1,5 +1,5 @@
 Settings:
-  Prefix: '&7[&4Crazy &bAuctions&7]: ' #Prefix of when you get Crazy Auctions Messages.
+  Prefix: '<gray>[<dark_red>Crazy <aqua>Auctions<gray>]: ' #Prefix of when you get Crazy Auctions Messages.
   GUIName: '&4Crazy &bAuctions&8' #Name of the Main GUI.
   Players-Current-Items: '&8Your Current Listings' #The Name of the Player Current Items GUI.
   Cancelled/Expired-Items: '&8Canceled/Expired Listings' #Name of the Cancelled/Expired GUI.
@@ -21,6 +21,13 @@ Settings:
   Feature-Toggle: #Toggle if a feature is on or off.
     Selling: true #Able to use the selling part of the auction house.
     Bidding: true #Able to use the bidding part of the auction house.
+  Repeating-Message:
+    # If true, a message is sent if a player has an item in Expired/Canceled Inventory
+    Toggle: true
+    # The message to send.
+    Message: "You have some expired items from you auction! Collect them by using /ah collect"
+    # The interval in ticks(20 ticks = 1 second), if set to 0 will only send once when they join.
+    Interval: 0
   Patches:
     Macro-Dupe: true #Turn to false if you have an issue, but it should patch the bug.
   Sounds:
